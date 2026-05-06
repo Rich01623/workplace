@@ -474,6 +474,17 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Step 3 Tabs */
+        .tab-container { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
+        .tab-btn {
+            padding: 10px 20px; cursor: pointer; border: none; background: none;
+            color: var(--text-muted); font-weight: bold; border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+
+        .summary-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold; margin-top: 10px; }
+        .summary-value { font-size: 1rem; margin-bottom: 12px; color: var(--text-main); font-weight: 600; white-space: pre-wrap; }
     </style>
 </head>
 <body class="night-mode">
@@ -490,11 +501,17 @@
             <div class="step-title">Collection & Delivery</div>
         </div>
         
-        <div class="step-connector" id="stepperLine"></div>
+        <div class="step-connector" id="line1"></div>
         
         <div class="step" id="indicator2" onclick="navToStep(2)">
             <div class="step-circle">2</div>
             <div class="step-title">Consignment Details</div>
+        </div>
+
+        <div class="step-connector" id="line2"></div>
+        <div class="step" id="indicator3">
+            <div class="step-circle">3</div>
+            <div class="step-title">Confirm</div>
         </div>
     </div>
 
@@ -549,7 +566,7 @@
                         </select>
                     </div>
                     
-                    <form id="deliveryForm" onsubmit="continueToFreight(event)">
+                    <form id="deliveryForm" onsubmit="goToStep2(event)">
                         
                         <div class="form-group">
                             <input type="text" id="companyName" placeholder="Company Name (Optional)">
@@ -560,7 +577,7 @@
                         </div>
 
                         <div class="form-group">
-                            <input type="text" id="addressLine2" placeholder="Address Line 2 *" required>
+                            <input type="text" id="addressLine2" placeholder="Address Line 2 (Optional)">
                         </div>
                         
                         <div class="form-row">
@@ -597,7 +614,7 @@
     <div id="step2" class="step-section hidden">
         <div class="container">
             
-            <form id="freightForm" class="form-split-wrapper" onsubmit="submitFinalJob(event)">
+            <form id="freightForm" class="form-split-wrapper" onsubmit="goToStep3(event)">
                 
                 <!-- LEFT SIDE (50%): The physical freight details -->
                 <div class="half-column">
@@ -665,7 +682,7 @@
                             <label class="toggle-box">
                                 <span>AM - AM DELIVERY</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surAM" value="AM">
+                                    <input type="checkbox" id="surAM" class="sur-cb" value="AM Delivery">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -673,7 +690,7 @@
                             <label class="toggle-box">
                                 <span>TB - TIMED BOOKING</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surTB" value="TB" onchange="checkTimeFields()">
+                                    <input type="checkbox" id="surTB" class="sur-cb" value="Timed Booking" onchange="checkTimeFields()">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -681,7 +698,7 @@
                             <label class="toggle-box">
                                 <span>TA - BY 10.00 AM</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surTA" value="TA">
+                                    <input type="checkbox" id="surTA" class="sur-cb" value="By 10.00 AM">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -689,7 +706,7 @@
                             <label class="toggle-box">
                                 <span>BW - BOOKED WINDOW</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surBW" value="BW" onchange="checkTimeFields()">
+                                    <input type="checkbox" id="surBW" class="sur-cb" value="Booked Window" onchange="checkTimeFields()">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -697,7 +714,7 @@
                             <label class="toggle-box">
                                 <span>SA - SATURDAY AM</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surSA" value="SA">
+                                    <input type="checkbox" id="surSA" class="sur-cb" value="Saturday AM">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -705,7 +722,7 @@
                             <label class="toggle-box">
                                 <span>TL - TAIL LIFT</span>
                                 <div class="switch">
-                                    <input type="checkbox" id="surTL" value="TL">
+                                    <input type="checkbox" id="surTL" class="sur-cb" value="Tail Lift">
                                     <span class="slider"></span>
                                 </div>
                             </label>
@@ -751,13 +768,105 @@
                         <div style="flex-grow: 1;"></div>
 
                         <div class="button-group">
-                            <button type="button" class="btn btn-secondary" onclick="goBack()">Back</button>
-                            <button type="submit" class="btn btn-primary">Submit to Pending Queue</button>
+                            <button type="button" class="btn btn-secondary" onclick="backToStep1()">Back</button>
+                            <button type="submit" class="btn btn-primary">Review & Confirm</button>
                         </div>
                     </div>
                 </div>
 
             </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- STEP 3: VIEW & CONFIRM                     -->
+    <!-- ========================================== -->
+    <div id="step3" class="step-section hidden">
+        <div class="container">
+            <div class="form-split-wrapper">
+                
+                <!-- Section 1: Addresses (Left Side) -->
+                <div class="left-column">
+                    <div class="card" style="height: 100%;">
+                        <h2 class="card-header">Addresses</h2>
+                        
+                        <div class="summary-label">Collection From (Depot)</div>
+                        <div class="summary-value" id="s3-depot">---</div>
+                        
+                        <div class="summary-label">Delivery To</div>
+                        <div class="summary-value" id="s3-delivery">---</div>
+                        
+                        <div class="summary-label">Contact Details</div>
+                        <div class="summary-value" id="s3-contact">---</div>
+                    </div>
+                </div>
+                
+                <!-- Section 2: Consignment Details (Right Side) -->
+                <div class="right-column">
+                    <div class="card">
+                        
+                        <div class="tab-container">
+                            <button type="button" class="tab-btn active" id="tabDetails" onclick="showTab('details')">Details</button>
+                            <button type="button" class="tab-btn" id="tabNotes" onclick="showTab('notes')">Notes</button>
+                        </div>
+                        
+                        <!-- Details Tab -->
+                        <div id="s3-details">
+                            <div class="form-row">
+                                <div style="flex:1">
+                                    <div class="summary-label">Consignment No</div>
+                                    <div class="summary-value" id="s3-consNo">---</div>
+                                </div>
+                                <div style="flex:1">
+                                    <div class="summary-label">Service Level</div>
+                                    <div class="summary-value" id="s3-service">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="summary-label">Pallet Breakdown</div>
+                            <div class="summary-value" id="s3-pallets">---</div>
+                            
+                            <div class="form-row">
+                                <div style="flex:1">
+                                    <div class="summary-label">Customer Ref 1</div>
+                                    <div class="summary-value" id="s3-ref1">---</div>
+                                </div>
+                                <div style="flex:1">
+                                    <div class="summary-label">Customer Ref 2</div>
+                                    <div class="summary-value" id="s3-ref2">---</div>
+                                </div>
+                            </div>
+                            
+                            <div class="summary-label">Active Surcharges</div>
+                            <div class="summary-value" id="s3-surcharges">None</div>
+                        </div>
+                        
+                        <!-- Notes Tab -->
+                        <div id="s3-notes" class="hidden">
+                            <div class="summary-label">Note 1</div>
+                            <div class="summary-value" id="s3-n1">None</div>
+                            
+                            <div class="summary-label">Note 2</div>
+                            <div class="summary-value" id="s3-n2">None</div>
+                            
+                            <div class="summary-label">Note 3</div>
+                            <div class="summary-value" id="s3-n3">None</div>
+                            
+                            <div class="summary-label">Note 4</div>
+                            <div class="summary-value" id="s3-n4">None</div>
+                        </div>
+                        
+                        <!-- NEW DOWNLOAD CSV BUTTON ADDED HERE -->
+                        <div style="margin-top:20px; display:flex; gap:10px;">
+                            <button type="button" class="btn btn-secondary" onclick="backToStep2()">Edit Details</button>
+                            <button type="button" class="btn" style="background-color: #17a2b8; color: white;" onclick="downloadCSV()">Download CSV</button>
+                            <button type="button" class="btn btn-primary" style="background-color: #28a745; border: 1px solid #218838;" onclick="submitFinalJob(event)">Confirm & Submit Job</button>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+            </div>
         </div>
     </div>
 
@@ -778,29 +887,8 @@
             }
         }
 
-        function updateStepperUI(step) {
-            const ind1 = document.getElementById('indicator1');
-            const ind2 = document.getElementById('indicator2');
-            const line = document.getElementById('stepperLine');
-
-            if (step === 1) {
-                ind1.className = 'step active';
-                ind2.className = 'step';
-                line.className = 'step-connector';
-            } else if (step === 2) {
-                ind1.className = 'step completed';
-                ind2.className = 'step active';
-                line.className = 'step-connector filled';
-            }
-        }
-
-        function navToStep(targetStep) {
-            if (targetStep === 1 && currentStepNum === 2) {
-                goBack();
-            }
-        }
-
-        function continueToFreight(event) {
+        // Updated Step Navigation Logic
+        function goToStep2(event) {
             event.preventDefault(); 
             
             const selectedDepot = document.querySelector('input[name="depot"]:checked').value;
@@ -813,19 +901,140 @@
             }
 
             document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
             document.getElementById('step2').classList.remove('hidden');
             window.scrollTo(0, 0); 
             
             currentStepNum = 2;
-            updateStepperUI(2);
+            
+            document.getElementById('indicator1').className = 'step completed';
+            document.getElementById('indicator2').className = 'step active';
+            document.getElementById('indicator3').className = 'step';
+            document.getElementById('line1').classList.add('filled');
+            document.getElementById('line2').classList.remove('filled');
         }
 
-        function goBack() {
+        function goToStep3(event) {
+            event.preventDefault();
+            
+            // Populate the data before showing the step
+            populateStep3();
+            
+            document.getElementById('step1').classList.add('hidden');
             document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            window.scrollTo(0, 0); 
+            
+            currentStepNum = 3;
+            
+            document.getElementById('indicator1').className = 'step completed';
+            document.getElementById('indicator2').className = 'step completed';
+            document.getElementById('indicator3').className = 'step active';
+            document.getElementById('line1').classList.add('filled');
+            document.getElementById('line2').classList.add('filled');
+        }
+
+        function backToStep1() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
             document.getElementById('step1').classList.remove('hidden');
             
             currentStepNum = 1;
-            updateStepperUI(1);
+            
+            document.getElementById('indicator1').className = 'step active';
+            document.getElementById('indicator2').className = 'step';
+            document.getElementById('indicator3').className = 'step';
+            document.getElementById('line1').classList.remove('filled');
+            document.getElementById('line2').classList.remove('filled');
+        }
+        
+        function backToStep2() {
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            
+            currentStepNum = 2;
+            
+            document.getElementById('indicator1').className = 'step completed';
+            document.getElementById('indicator2').className = 'step active';
+            document.getElementById('indicator3').className = 'step';
+            document.getElementById('line1').classList.add('filled');
+            document.getElementById('line2').classList.remove('filled');
+        }
+        
+        function navToStep(targetStep) {
+            if (targetStep === 1 && currentStepNum > 1) {
+                backToStep1();
+            } else if (targetStep === 2 && currentStepNum === 3) {
+                backToStep2();
+            }
+        }
+
+        // Tab Switcher for Step 3
+        function showTab(type) {
+            if (type === 'details') {
+                document.getElementById('s3-details').classList.remove('hidden');
+                document.getElementById('s3-notes').classList.add('hidden');
+                document.getElementById('tabDetails').classList.add('active');
+                document.getElementById('tabNotes').classList.remove('active');
+            } else {
+                document.getElementById('s3-details').classList.add('hidden');
+                document.getElementById('s3-notes').classList.remove('hidden');
+                document.getElementById('tabDetails').classList.remove('active');
+                document.getElementById('tabNotes').classList.add('active');
+            }
+        }
+
+        // Populate Step 3
+        function populateStep3() {
+            // Depot
+            const depot = document.querySelector('input[name="depot"]:checked').value;
+            document.getElementById('s3-depot').innerText = depot === 'Bingham' ? 'Workplace Depot-Bingham\nMoorbridge road E\nBingham\nNG13 8XB' : 'Workplace Depot-Newton\nHangar 1\nNewton industrial est';
+            
+            // Build Delivery String
+            const comp = document.getElementById('companyName').value;
+            const a1 = document.getElementById('addressLine1').value;
+            const a2 = document.getElementById('addressLine2').value;
+            const t = document.getElementById('town').value;
+            const c = document.getElementById('county').value;
+            const p = document.getElementById('postcode').value;
+            
+            let fullAddr = "";
+            if (comp) fullAddr += comp + "\n";
+            fullAddr += a1 + "\n";
+            if (a2) fullAddr += a2 + "\n";
+            fullAddr += t + "\n";
+            if (c) fullAddr += c + "\n";
+            fullAddr += p;
+            
+            document.getElementById('s3-delivery').innerText = fullAddr;
+            
+            // Contact
+            document.getElementById('s3-contact').innerText = `${document.getElementById('contactName').value}\n${document.getElementById('telephone').value}`;
+            
+            // Details Tab
+            document.getElementById('s3-consNo').innerText = document.getElementById('consignmentNumber').value;
+            document.getElementById('s3-service').innerText = document.getElementById('serviceLevel').value || 'Not Selected';
+            
+            const f = document.getElementById('palFull').value || 0;
+            const h = document.getElementById('palHalf').value || 0;
+            const q = document.getElementById('palQuarter').value || 0;
+            const m = document.getElementById('palMicro').value || 0;
+            const o = document.getElementById('palOversized').value || 0;
+            const tot = document.getElementById('totalSpaces').value;
+            document.getElementById('s3-pallets').innerText = `Full: ${f} | Half: ${h} | Qtr: ${q} | Micro: ${m} | Oversized: ${o}\n${tot}`;
+            
+            document.getElementById('s3-ref1').innerText = document.getElementById('customerRef1').value || 'None';
+            document.getElementById('s3-ref2').innerText = document.getElementById('customerRef2').value || 'None';
+            
+            const surs = Array.from(document.querySelectorAll('.sur-cb:checked')).map(cb => cb.value);
+            document.getElementById('s3-surcharges').innerText = surs.length > 0 ? surs.join(', ') : 'None';
+            
+            // Notes Tab
+            document.getElementById('s3-n1').innerText = document.getElementById('note1').value || 'None';
+            document.getElementById('s3-n2').innerText = document.getElementById('note2').value || 'None';
+            document.getElementById('s3-n3').innerText = document.getElementById('note3').value || 'None';
+            document.getElementById('s3-n4').innerText = document.getElementById('note4').value || 'None';
         }
 
         function calculateSpaces() {
@@ -842,8 +1051,8 @@
         }
 
         function checkTimeFields() {
-            const tbChecked = document.getElementById('surTB').checked;
-            const bwChecked = document.getElementById('surBW').checked;
+            const tbChecked = document.getElementById('surTB') ? document.getElementById('surTB').checked : false;
+            const bwChecked = document.getElementById('surBW') ? document.getElementById('surBW').checked : false;
             const timeWrapper = document.getElementById('timeFieldsWrapper');
             const timeFrom = document.getElementById('timeFrom');
             const timeTo = document.getElementById('timeTo');
@@ -864,6 +1073,61 @@
         function submitFinalJob(event) {
             event.preventDefault();
             alert("Job saved successfully! It is now in the pending queue for your traffic desk to process.");
+        }
+
+        // ==========================================
+        // NEW FEATURE: DOWNLOAD CSV LOGIC
+        // ==========================================
+        function downloadCSV() {
+            // Helper function to grab values safely
+            const val = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value : '';
+            };
+
+            const depot = document.querySelector('input[name="depot"]:checked') ? document.querySelector('input[name="depot"]:checked').value : '';
+            const surs = Array.from(document.querySelectorAll('.sur-cb:checked')).map(cb => cb.value).join(' | ');
+
+            const headers = [
+                "Depot", "Company Name", "Address Line 1", "Address Line 2", "Town", "County", "Postcode", 
+                "Telephone", "Contact Name", "Consignment Number", "Customer Ref 1", "Customer Ref 2", 
+                "Full Pallets", "Half Pallets", "Quarter Pallets", "Micro Pallets", "Oversized Pallets", 
+                "Total Spaces", "Total Weight (kg)", "Service Level", "Surcharges", "Time From", "Time To",
+                "Note 1", "Note 2", "Note 3", "Note 4"
+            ];
+
+            const rowData = [
+                depot, val('companyName'), val('addressLine1'), val('addressLine2'), val('town'), val('county'), val('postcode'),
+                val('telephone'), val('contactName'), val('consignmentNumber'), val('customerRef1'), val('customerRef2'),
+                val('palFull'), val('palHalf'), val('palQuarter'), val('palMicro'), val('palOversized'),
+                val('totalSpaces'), val('palletWeight'), val('serviceLevel'), surs, val('timeFrom'), val('timeTo'),
+                val('note1'), val('note2'), val('note3'), val('note4')
+            ];
+
+            // Safely escape commas, quotes, and newlines for CSV formatting
+            const escapeCSV = (str) => {
+                let stringified = String(str);
+                if (stringified.includes(',') || stringified.includes('"') || stringified.includes('\n')) {
+                    stringified = `"${stringified.replace(/"/g, '""')}"`;
+                }
+                return stringified;
+            };
+
+            const csvContent = headers.join(',') + '\n' + rowData.map(escapeCSV).join(',');
+            
+            // Create a Blob and trigger the browser download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            
+            // Name the file intelligently based on the consignment number
+            const fileName = val('consignmentNumber') ? `Consignment_${val('consignmentNumber')}.csv` : 'Consignment_Details.csv';
+            link.setAttribute("download", fileName);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // ==========================================
