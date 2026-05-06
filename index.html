@@ -867,19 +867,15 @@
         }
 
         // ==========================================
-        // LIVE GETADDRESS.IO API LOGIC (VERSION 3.0)
+        // LIVE IDEAL POSTCODES API LOGIC 
         // ==========================================
         
-        // Your newly supplied API Key
-        const API_KEY = "_y0R8UJzsUutzEpPN1fd8g51871"; 
+        // Using your new Ideal Postcodes API Key
+        const API_KEY = "ak_motzwr6kWhHtOMK3RnIzzk4GedseH"; 
         let currentAddresses = []; 
 
         async function searchPostcode() {
-            // This prints to the console so we KNOW the new code is running
-            console.log("--- RUNNING VERSION 3.0 (NEW API KEY) ---");
-            
             const rawInput = document.getElementById('postcodeSearchInput').value.trim();
-            // This perfectly safely formats the URL for the browser
             const safeInput = encodeURIComponent(rawInput.toUpperCase());
             
             const dropdown = document.getElementById('addressDropdown');
@@ -890,46 +886,41 @@
                 return;
             }
 
-            // Clear previous results and show loading state
             dropdown.innerHTML = '<option value="" disabled selected>Searching...</option>';
             container.classList.remove('hidden');
 
             try {
-                // Call the API with the safe postcode and your new key
-                const response = await fetch(`https://api.getaddress.io/find/${safeInput}?api-key=${API_KEY}&expand=true`);
+                // Switching the fetch to Ideal Postcodes server
+                const response = await fetch(`https://api.ideal-postcodes.co.uk/v1/postcodes/${safeInput}?api_key=${API_KEY}`);
+                const data = await response.json();
                 
-                // Explicit Error Catching
-                if (!response.ok) {
-                    if (response.status === 401) throw new Error('401: API Key Invalid. Check your key.');
-                    if (response.status === 403) throw new Error('403: Forbidden. Either domain blocked, or out of credits.');
-                    if (response.status === 404) throw new Error('404: Postcode simply not found in Royal Mail database.');
-                    if (response.status === 429) throw new Error('429: Too many requests. Rate limit hit.');
-                    throw new Error(`${response.status}: Unknown API error.`);
+                // Ideal Postcodes returns success code 2000
+                if (data.code !== 2000) {
+                     throw new Error(data.message || 'Postcode not found.');
                 }
 
-                const data = await response.json();
-                currentAddresses = data.addresses; 
+                currentAddresses = data.result; 
 
-                // Re-populate the dropdown with real data
                 dropdown.innerHTML = '<option value="" disabled selected>Select an address...</option>';
 
                 currentAddresses.forEach((address, index) => {
                     const option = document.createElement('option');
                     option.value = index; 
                     
-                    let displayText = [address.line_1, address.line_2, address.town_or_city].filter(Boolean).join(', ');
-                    if (address.company_name) {
-                        displayText = address.company_name + ', ' + displayText;
+                    // Displaying Line 1 and the Town
+                    let displayText = address.line_1;
+                    if (address.organisation_name) {
+                        displayText = address.organisation_name + ', ' + displayText;
                     }
+                    displayText += ', ' + address.post_town;
                     
                     option.textContent = displayText;
                     dropdown.appendChild(option);
                 });
 
             } catch (error) {
-                // Log the exact error to the developer console
-                console.error("GETADDRESS ERROR:", error.message);
-                dropdown.innerHTML = '<option value="" disabled selected>No addresses found (Check Developer Console for error details).</option>';
+                console.error("IDEAL POSTCODES ERROR:", error);
+                dropdown.innerHTML = '<option value="" disabled selected>No addresses found.</option>';
             }
         }
 
@@ -941,10 +932,11 @@
 
             const selectedAddress = currentAddresses[selectedIndex];
 
-            document.getElementById('companyName').value = selectedAddress.company_name || "";
+            // Mapping Ideal Postcodes data fields to your original form IDs
+            document.getElementById('companyName').value = selectedAddress.organisation_name || "";
             document.getElementById('addressLine1').value = selectedAddress.line_1 || "";
-            document.getElementById('addressLine2').value = [selectedAddress.line_2, selectedAddress.line_3].filter(Boolean).join(', ') || "";
-            document.getElementById('town').value = selectedAddress.town_or_city || "";
+            document.getElementById('addressLine2').value = selectedAddress.line_2 || "";
+            document.getElementById('town').value = selectedAddress.post_town || "";
             document.getElementById('county').value = selectedAddress.county || "";
             
             document.getElementById('postcode').value = document.getElementById('postcodeSearchInput').value.trim().toUpperCase();
